@@ -27,11 +27,23 @@ defmodule AsyncHttp.Query do
   def handle(state, :response, responses) do
     {result, request_ref} =
       Enum.reduce(responses, {state.acc, nil}, fn
-        {:status, _, s}, {acc, ref} -> {%AsyncHttp.Response{acc | status: s}, ref}
-        {:headers, _, h}, {acc, ref} -> {%AsyncHttp.Response{acc | headers: h}, ref}
-        {:data, _, b}, {acc, ref} -> {%AsyncHttp.Response{acc | body: b}, ref}
-        {:error, _, e}, {acc, ref} -> {%AsyncHttp.Response{acc | error: e}, ref}
-        {:done, ref}, {acc, _} -> {acc, ref}
+        {:status, _, s}, {acc, ref} ->
+          {%AsyncHttp.Response{acc | status: s}, ref}
+
+        {:headers, _, h}, {acc, ref} ->
+          {%AsyncHttp.Response{acc | headers: h}, ref}
+
+        {:data, _, b}, {acc, ref} ->
+          {Map.update(acc, :body, b, fn
+             nil -> b
+             x -> x <> b
+           end), ref}
+
+        {:error, _, e}, {acc, ref} ->
+          {%AsyncHttp.Response{acc | error: e}, ref}
+
+        {:done, ref}, {acc, _} ->
+          {acc, ref}
       end)
 
     case request_ref do
@@ -42,6 +54,4 @@ defmodule AsyncHttp.Query do
         [{:tell, {AsyncHttp.Conn, state.ep}, [:del_req, request_ref]}, {:stop, result}]
     end
   end
-
-  def normalize(url), do: {"GET", url, [], ""}
 end
