@@ -81,6 +81,7 @@ defmodule AsyncHttp.Conn do
     {:set, %__MODULE__{state | conn: conn, reqs: Map.put(reqs, request_ref, query)}}
   end
 
+  defp connect({scheme, address, port, _tag}), do: Mint.HTTP.connect(scheme, address, port)
   defp connect({scheme, address, port}), do: Mint.HTTP.connect(scheme, address, port)
   defp connect(arg), do: {:error, {:badarg, arg}}
 
